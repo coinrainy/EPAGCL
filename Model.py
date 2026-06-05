@@ -7,6 +7,8 @@ from torch_geometric.nn import GCNConv
 class MyModel(nn.Module):
     def __init__(self, in_channels, out_channels, num_proj_hidden, temperature=0.3, activation='PReLU'):
         super().__init__()
+        self.fn_weight = 0.1
+        self.fn_topk = 8
         if activation == 'PReLU':
             self.activation = nn.PReLU()
         self._build_up(in_channels, out_channels, num_proj_hidden, temperature)
@@ -45,14 +47,32 @@ class MyModel(nn.Module):
             if not batch_compute:
                 refl_sim = self.cal_sim(z1[mask], z1)
                 between_sim = self.cal_sim(z1[mask], z2)
-                losses.append(-torch.log(between_sim[:, i * batch_size:(i + 1) * batch_size].diag()
-                                     / (refl_sim.sum(1) + between_sim.sum(1)
-                                        - refl_sim[:, i * batch_size:(i + 1) * batch_size].diag())))
+                pos = between_sim[:, i * batch_size:(i + 1) * batch_size].diag()
+                self_diag = refl_sim[:, i * batch_size:(i + 1) * batch_size].diag()
+                denom = refl_sim.sum(1) + between_sim.sum(1) - self_diag
+                denom = self.false_negative_adjusted_denominator(refl_sim, denom, i * batch_size)
+                losses.append(-torch.log(pos / denom))
             else:
                 refl_sim = self.cal_sim(z1[mask], z1[mask])
                 between_sim = self.cal_sim(z1[mask], z2[mask])
-                losses.append(-torch.log(between_sim.diag() / (refl_sim.sum(1) + between_sim.sum(1) - refl_sim.diag())))
+                denom = refl_sim.sum(1) + between_sim.sum(1) - refl_sim.diag()
+                denom = self.false_negative_adjusted_denominator(refl_sim, denom)
+                losses.append(-torch.log(between_sim.diag() / denom))
         return torch.cat(losses)    
+
+    def false_negative_adjusted_denominator(self, refl_sim, denom, diag_offset=0):
+        if self.fn_weight <= 0 or refl_sim.size(1) <= 1:
+            return denom
+        adjusted = refl_sim.clone()
+        rows = torch.arange(adjusted.size(0), device=adjusted.device)
+        cols = rows + diag_offset
+        valid = cols < adjusted.size(1)
+        adjusted[rows[valid], cols[valid]] = 0
+        k = min(self.fn_topk, adjusted.size(1) - 1)
+        if k <= 0:
+            return denom
+        likely_false_negatives = torch.topk(adjusted, k=k, dim=1).values.sum(1)
+        return (denom - self.fn_weight * likely_false_negatives).clamp_min(1e-12)
 
     def _build_up(self, in_channels, out_channels, num_proj_hidden, temperature):
         self.conv1 = GCNConv(in_channels, 2 * out_channels)
