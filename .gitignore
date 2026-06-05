@@ -28,3 +28,7 @@ paper/.*
 latexsource/
 *.data
 
+.conda/
+trained_models/
+best_eval.pth
+results.tsv
