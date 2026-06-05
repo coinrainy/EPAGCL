@@ -63,3 +63,4 @@ conda run -p ./.conda/epagcl-autoresearch python main.py --add_single --dataset 
 - Added diagnostics for low/mid/high degree accuracy, augmentation consistency, neighborhood inconsistency, false-negative proxy, and augmentation edge statistics.
 - Smoke tests passed for Cora with `epoch=10` and `epoch=1`; both emitted `AUTORESEARCH_RESULT`.
 - Formal fixed Cora baseline completed: mean_acc 84.4649, std_acc 1.1464, max_acc 86.2085, min_acc 82.7952.
+- Autoresearch experiment 002 kept: false-negative-aware denominator downweight improved Cora mean_acc to 84.5111 versus baseline 84.4649; gain is small, but low_degree_acc improved to 81.6725, satisfying the diagnostic gate.
