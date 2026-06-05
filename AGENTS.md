@@ -64,3 +64,5 @@ conda run -p ./.conda/epagcl-autoresearch python main.py --add_single --dataset 
 - Smoke tests passed for Cora with `epoch=10` and `epoch=1`; both emitted `AUTORESEARCH_RESULT`.
 - Formal fixed Cora baseline completed: mean_acc 84.4649, std_acc 1.1464, max_acc 86.2085, min_acc 82.7952.
 - Autoresearch experiment 002 kept: false-negative-aware denominator downweight improved Cora mean_acc to 84.5111 versus baseline 84.4649; gain is small, but low_degree_acc improved to 81.6725, satisfying the diagnostic gate.
+- Autoresearch experiment 009 discarded: false-negative denominator weight 0.05 reached mean_acc 84.4926, below current best 84.5111; result recorded locally in `results.tsv` and code was reverted.
+- Autoresearch experiment 010 discarded: cross-view false-negative downweight reached mean_acc 84.4557, below current best 84.5111; result recorded locally in `results.tsv` and code was reverted.
